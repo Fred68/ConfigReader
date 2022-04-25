@@ -167,6 +167,7 @@ namespace GenDict
 					else
 						return (double)_obj;
 					}
+					//break;
 				case TypeVar.DATE:
 					{
 					if(_list)

@@ -1,15 +1,23 @@
-﻿
+﻿#if DYN_DICTIONARY
+#undef DYN_DICTIONARY
+#endif
+// #define DYN_DICTIONARY			// Use ctor: dynamic GenDictionary(); instead of GenDictionary GenDictionary();
 
 using System;
 using System.Collections.Generic;
 using System.Text;
 
+#if DYN_DICTIONARY
 using System.Dynamic;
+#endif
 
 namespace GenDict
 	{
 
-	public class GenDictionary : DynamicObject
+	public class GenDictionary 
+		#if DYN_DICTIONARY
+			: DynamicObject
+		#endif
 		{
 		/// <summary>
 		/// Dizionario di blocchi di dati Dat
@@ -55,6 +63,7 @@ namespace GenDict
 				}
 			}
 
+		#if DYN_DICTIONARY
 		/// <summary>
 		/// Dynamic Object member access
 		/// </summary>
@@ -88,7 +97,12 @@ namespace GenDict
 			this[binder.Name] = value;
 			return true;
 			}
+		#endif
 
+		/// <summary>
+		/// Dumpe dictionary content to string
+		/// </summary>
+		/// <returns></returns>
 		public string Dump()
 			{
 			StringBuilder sb = new StringBuilder();
@@ -110,8 +124,6 @@ namespace GenDict
 					sb.AppendLine($"[{key}]={_dict[key].Get().ToString()}");
 					}
 				}
-
-
 			return sb.ToString();
 			}
 

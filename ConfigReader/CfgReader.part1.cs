@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 
 using StringExtension;						// Funzioni extra
 using GenDict;								// Dizionario generico
+using System.Dynamic;
 
 namespace CfgReader
 	{
@@ -25,7 +26,7 @@ namespace CfgReader
 	/// <summary>
 	/// Config text file reader
 	/// </summary>
-	public partial class CfgReader
+	public partial class CfgReader : DynamicObject
 		{
 		
 		StringBuilder _msg;
@@ -85,6 +86,7 @@ namespace CfgReader
 			{
 			return _dict.Dump();
 			}
+
 		/// <summary>
 		/// Legge il file di testo e inserisce le linee valide nella lista
 		/// </summary>
@@ -176,7 +178,9 @@ namespace CfgReader
 			return s;
 			}
 
-		
+		/// <summary>
+		/// Esamina il contenuto delle linee valide
+		/// </summary>
 		public void Process()
 			{
 			string x;
@@ -260,8 +264,6 @@ namespace CfgReader
 					}
 				}
 			}
-
-
 
 		/// <summary>
 		/// Identifica il contenuto tra gli indicatori di sezione []
@@ -461,8 +463,7 @@ namespace CfgReader
 					throw new NotImplementedException("Tipo dato non definito");
 					}
 				}
-			}
-		
+			}	
 
 		dynamic CreateList(TypeVar typ)
 			{
@@ -499,7 +500,6 @@ namespace CfgReader
 				}
 			}
 
-		#warning DA CONTROLLARE E COMPLETARE !!!!
 		TypeVar ExecuteAssign(TypeVar typ, string name, List<string> args)
 			{
 			TypeVar ret = TypeVar.None;							// Nessun tipo di default
@@ -542,18 +542,33 @@ namespace CfgReader
 			return ret;
 			}
 
+		public override bool TryGetMember(GetMemberBinder binder, out dynamic result)
+			{
+			string key = binder.Name;
+			bool ok = true;
+			if(_dict.ContainsKey(key))
+				{
+				result = _dict[key];
+				}
+			else
+				{
+				result = null;
+				ok = false;
+				}
+			return ok;
+			}
 
-			#warning ANALIZZARE tipo con switch
-			#warning VEDERE SE ARGOMENTO UNICO O LISTA
-			#warning CHIAMARE LE FUNZIONI SPECIFICHE PER VALUTARE I DATI (MEGLIO SCORPORARLE)
-
-
-
-
-
-				
-			
-
+		/// <summary>
+		/// Dynamic Object member access 
+		/// </summary>
+		/// <param name="binder"></param>
+		/// <param name="value"></param>
+		/// <returns></returns>
+		public override bool TrySetMember(SetMemberBinder binder, object value)
+			{
+			_dict[binder.Name] = value;
+			return true;
+			}
 		}	// Fine classe CfgReader
 	
 	

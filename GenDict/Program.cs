@@ -1,5 +1,7 @@
-﻿
-#define DYN_DICTIONARY			// Use ctor: dynamic GenDictionary(); instead of GenDictionary GenDictionary();
+﻿#if DYN_DICTIONARY
+#undef DYN_DICTIONARY
+#endif
+// #define DYN_DICTIONARY			// Use ctor: dynamic GenDictionary(); instead of GenDictionary GenDictionary();
 
 
 using System;
@@ -25,7 +27,6 @@ namespace GenDict
 				GenDictionary d = new GenDictionary();
 				#endif
 				
-				
 				d["i"] = 100;
 
 				#if DYN_DICTIONARY
@@ -50,7 +51,11 @@ namespace GenDict
 				d["s"] = d["s"] + " modificato";
 
 				Console.WriteLine(d["i"]);
+
+				#if DYN_DICTIONARY
 				Console.WriteLine(d.i);
+				#endif
+
 				Console.WriteLine(d["s"]);
 				Console.WriteLine(d["b"]);
 				Console.WriteLine(d["f"]);
@@ -66,11 +71,11 @@ namespace GenDict
 				d["d"] = null;
 				// Console.WriteLine(d["d"]);		// Eccezione (d cancellato)
 
-				Console.WriteLine("Count:");
+				Console.WriteLine("\nCount:");
 				Console.WriteLine(d.Count);
 				
 
-				Console.WriteLine("Keys from KeyCollection():");
+				Console.WriteLine("\nKeys from KeyCollection():");
 				foreach(string ss in d.KeyCollection)
 					{
 					Console.WriteLine(ss);
@@ -82,24 +87,25 @@ namespace GenDict
 				// Console.WriteLine(d.Values);		// Eccezione (non implementato)
 
 				string s = "d";
-				Console.WriteLine($"ContainsKey({s}): {d.ContainsKey(s)}");
+				Console.WriteLine($"\nContainsKey({s}): {d.ContainsKey(s)}");
 
-
-				Console.WriteLine("Keys from IEnumerator<string> GetEnumerator():");
+				#if !DYN_DICTIONARY
+				Console.WriteLine("\nKeys from IEnumerator<string> GetEnumerator():");
 				foreach(string k in d)
 					{
 					Console.WriteLine(k);
 					}
+				#endif
 				
 				#if !DYN_DICTIONARY
-				Console.WriteLine("Keys from IEnumerable<string> Keys():");
+				Console.WriteLine("\nKeys from IEnumerable<string> Keys():");
 				foreach(string k in d.Keys())
 					{
 					Console.WriteLine(k);
 					}
 				#endif
 
-				Console.WriteLine("Dump");
+				Console.WriteLine("\nDump");
 				Console.WriteLine(d.Dump());
 
 				}

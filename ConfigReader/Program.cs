@@ -13,10 +13,15 @@ namespace CfgReader
 			string filename = "esempio.txt";
 			Console.WriteLine("Avvio programma.");
 
-			CfgReader cfgR = new CfgReader(filename);
+			dynamic cfgR = new CfgReader(filename);
 			cfgR.Process();
 
 			Console.WriteLine(cfgR.ToString());
+
+			
+			Console.WriteLine("cc = " + cfgR.cc);
+			cfgR.cc = 100.3f;
+			Console.WriteLine("cc = " + cfgR.cc);
 
 			Console.WriteLine("Variabili importate:");
 			Console.WriteLine(cfgR.DumpEntries());

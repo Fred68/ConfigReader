@@ -5,11 +5,12 @@ using System.Text;
 using System.Threading.Tasks;
 
 using GenDict;
+using System.Dynamic;
 
 namespace CfgReader
 	{
 
-	public partial class CfgReader
+	public partial class CfgReader : DynamicObject
 		{
 
 		public static class MSG
