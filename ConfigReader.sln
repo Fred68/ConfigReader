@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32319.34
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigReader", "ConfigReader\ConfigReader.csproj", "{2653EC69-8D11-40BC-BB6A-D9DA608AECFF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenDict", "GenDict\GenDict.csproj", "{CB3EC9AC-ED53-45DD-8464-95A21D4DA465}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2653EC69-8D11-40BC-BB6A-D9DA608AECFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2653EC69-8D11-40BC-BB6A-D9DA608AECFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2653EC69-8D11-40BC-BB6A-D9DA608AECFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2653EC69-8D11-40BC-BB6A-D9DA608AECFF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CB3EC9AC-ED53-45DD-8464-95A21D4DA465}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CB3EC9AC-ED53-45DD-8464-95A21D4DA465}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CB3EC9AC-ED53-45DD-8464-95A21D4DA465}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CB3EC9AC-ED53-45DD-8464-95A21D4DA465}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CB0D9852-D278-4BA7-BF68-85765625E5F7}
+	EndGlobalSection
+EndGlobal
