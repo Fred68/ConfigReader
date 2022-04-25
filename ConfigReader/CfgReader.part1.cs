@@ -15,9 +15,6 @@ namespace CfgReader
 	{
 
 	#warning DA FARE:
-	#warning Aggiungere lettura variabili, con carattere =. Scrivere funzioni separate per ogni tipo, poi usarle anche per le liste
-	#warning Usare tipo e separatore di lista opzionale (non discriminare dal contenuto, laborioso).
-	#warning Aggiungere dizionari e tipi
 	#warning Spostare le due chiamate a lettura e analisi sotto il costruttore.
 	#warning Aggiungere eliminazione variabile (con Nomevar=)
 	#warning Aggiungere uso delle variabili (concatenazione, voce singola, somma, differenza)
