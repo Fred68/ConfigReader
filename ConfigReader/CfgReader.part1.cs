@@ -9,14 +9,12 @@ using System.Text.RegularExpressions;
 
 using StringExtension;						// Funzioni extra
 using GenDict;								// Dizionario generico
-using System.Dynamic;
+using System.Dynamic;						// Per usare dynamic e TryGetMember
 
 namespace CfgReader
 	{
 
 	#warning DA FARE:
-	#warning Spostare le due chiamate a lettura e analisi sotto il costruttore.
-	#warning Aggiungere eliminazione variabile (con Nomevar=)
 	#warning Aggiungere uso delle variabili (concatenazione, voce singola, somma, differenza)
 	
 
@@ -25,12 +23,13 @@ namespace CfgReader
 	/// </summary>
 	public partial class CfgReader : DynamicObject
 		{
-		
+
 		StringBuilder _msg;
 		bool ok;
 		List<string> _lines;						// Righe valide del file
 		Dictionary<string, bool> _sect;				// Sezioni attive o disattive
 		GenDictionary _dict;						// Dizionario generico
+		Dictionary<string, Func<string, bool>> _cmds;			// Dizionario dei comandi
 
 		/// <summary>
 		/// Ctor
@@ -42,8 +41,11 @@ namespace CfgReader
 			_sect = new Dictionary<string, bool>();
 			_dict = new GenDictionary();
 			_msg = new StringBuilder();
+			_cmds = new Dictionary<string, Func<string, bool>>();
 			Clear();
+			CreateCommands();
 			ReadConfig(filename);
+			Process();
 			}
 
 		/// <summary>
@@ -59,10 +61,24 @@ namespace CfgReader
 			}
 
 		/// <summary>
-		/// ToString() ovverride
+		/// ToString() override
 		/// </summary>
 		/// <returns></returns>
 		public override string ToString()
+			{
+			StringBuilder sb = new StringBuilder();
+			sb.AppendLine(_msg.ToString());							// Messaggi
+			sb.AppendLine(IsOk ?									// stato
+							MSG.LetturaConfigurazioneOK :
+							MSG.LetturaConfigurazioneERR);
+			return sb.ToString();
+			}
+		public string DumpEntries()
+			{
+			return _dict.Dump();
+			}
+
+		public string DumpLines()
 			{
 			StringBuilder sb = new StringBuilder();
 			sb.AppendLine(string.Format(CfgReader.MSG.LineeValide,_lines.Count));
@@ -72,18 +88,8 @@ namespace CfgReader
 				sb.AppendLine($"{(i.ToString()+':').PadRight(PADlines, ' ')}{s}");
 				i++;
 				}
-			sb.AppendLine();
-			sb.AppendLine(_msg.ToString());		// Messaggi
-			sb.AppendLine( IsOk ? MSG.LetturaConfigurazioneOK : MSG.LetturaConfigurazioneERR);
-			sb.AppendLine();
-			
 			return sb.ToString();
 			}
-		public string DumpEntries()
-			{
-			return _dict.Dump();
-			}
-
 		/// <summary>
 		/// Legge il file di testo e inserisce le linee valide nella lista
 		/// </summary>
@@ -108,9 +114,10 @@ namespace CfgReader
 						line = RemoveComment(line);
 						if(line.Length > 0)
 							{
+							#if false
 							if(line.StartsWith(STR_Errore))
 								throw new Exception(string.Format(MSG.ErroreNellaRiga, n, line));
-							//_lines.Add(line);
+							#endif
 							}
 						_lines.Add(line);					// Linea aggiunta anch se vuota, per mantere il conteggio
 						}
@@ -178,88 +185,96 @@ namespace CfgReader
 		/// <summary>
 		/// Esamina il contenuto delle linee valide
 		/// </summary>
-		public void Process()
+		void Process()
 			{
-			string x;
+			string sect;
+			Tuple<string, string> tcom,t;
 			string section = string.Empty;
-			int linenum = 1;
+
+			int linenum = 1;											// Contatore
+			bool continua = true;										// Flag per uscire prima dal ciclo
+
 			foreach(string line in _lines)								// foreach fuori dal try: elenca tutte le eccezioni senza fermarsi
 				{
+				if(!continua)											// Esce dal ciclo, se richiesto
+					break;	
 				try
 					{
-					if((x = IdentifySection(line)).Length > 0)			// Identifica un nome di sezione (stringa vuota se non trovato)
+
+					sect = IdentifySection(line);						// Identifica una sezione  (stringa vuota se non trovato)
+					tcom = IdentifyCommand(line);						// Identifica un comando
+					t = IdentifyVariable(line);							// Identifica una assegnazione di variabile
+
+					if((line.Length > 0) && (sect.Length == 0) && (tcom.Item1.Length == 0) && (t.Item1.Length == 0))	
 						{
-						if(x == CHR_SezioneEnd)							// Se fine sezione: reimposta stringa vuota come sezione attiva
+						throw new Exception("Errore di sintassi");	// ...genera un'eccezione.
+						}
+
+					if(sect.Length > 0)									// Se ha identificato una sezione
+						{
+						if(sect == CHR_SezioneEnd)						// Se fine sezione: reimposta stringa vuota come sezione attiva
 							{
 							section = string.Empty;
 							}
 						else
 							{
-							section = x;								// Se no: imposta il nome come sezione corrente (attiva)
+							section = sect;								// Se no: imposta il nome come sezione corrente (attiva)
 							if(!_sect.ContainsKey(section))				// Se non è ancora presente trale sezioni...
 								{
 								_sect[section] = true;					// ...la aggiunge e la attiva (di default)
 								}
 							}
 						}
-
-					Tuple<string, string> t = IdentifyVariable(line);	// Identifica una assegnazione di variabile
-
-					if( ((x = IdentifySection(t.Item1)).Length > 0) && (x != CHR_SezioneEnd) )	// Se identifica un nome di sezione, x, nel nome...
+					
+					if(tcom.Item1.Length > 0)							// Esegue il comando...
+						{
+						if( (section.Length==0) || ((section.Length>0) && (_sect[section])))	// Se fuori sezione o in una sezione attiva
+							{
+							continua = _cmds[tcom.Item1](tcom.Item2);	// Chiama la funzione
+							}
+						}												// ...oppure esegue l'assegnazione:
+					else if( ((sect = IdentifySection(t.Item1)).Length > 0) && (sect != CHR_SezioneEnd) )	// Se identifica un nome di sezione nel nome...
 						{												// ...della variabile dell'assegnazione, analizza la sezione.
-						if(!_sect.ContainsKey(x))						// Se il nome di sezione, x, non è ancora presente tra le sezioni...
+						if(!_sect.ContainsKey(sect))					// Se il nome di sezione non è ancora presente tra le sezioni...
 							{											// ...non è stato riconosciuto nelle precedenti istruzioni:...
-							throw new Exception(string.Format(MSG.SezioneNonRiconosciuta, x));	// ...genera un'eccezione.
+							throw new Exception(string.Format(MSG.SezioneNonRiconosciuta, sect));	// ...genera un'eccezione.
 							}
 						else
 							{
 							if(t.Item2 == STR_On)						// Se è ON, la attiva...
 								{
-								_sect[x] = true;
+								_sect[sect] = true;
 								section = string.Empty;					// ...e azzera il nome della sezione corrente, identificato prima.
 								}
 							else if(t.Item2 == STR_Off)					// Se è OFF, la disattiva...			
 								{
-								_sect[x] = false;
+								_sect[sect] = false;
 								section = string.Empty;					// ...e azzera il nome della sezione corrente, identificato prima.
 								}
 							else										// Altrimenti il comando non è riconosciuto:...
 								{										// ...genera eccezione
-								throw new Exception(string.Format(MSG.ErroreSintassiSezione, x, t.Item2, STR_On, STR_Off));
+								throw new Exception(string.Format(MSG.ErroreSintassiSezione, sect, t.Item2, STR_On, STR_Off));
 								}
 							}
 						}
 					else if(t.Item1.Length>0)							// Se invece è stata indentificata un'assegnazione di variabile (non di sezione):
 						{
-						bool assign = true;								// Imposta l'assegnazione di default
-						if(section.Length > 0)							// Se la sezione corrente non è nulla...
+						if( (section.Length==0) || ((section.Length>0) && (_sect[section])))	// Se fuori sezione o in una sezione attiva
 							{
-							if(_sect[section])							// Se la sezione corrente è attiva...
-								{
-								assign = true;							// Abilita l'assegnazione
-								//_msg.Append($"{CHR_SezioneOpenBracket}{section}{CHR_SezioneClosedBracket}.");
-								}
-							else										// Se la sezione corrente è inattiva...
-								{
-								assign = false;							// Disabilita l'assegnazione
-								}
-							}
-
-						if(assign)										// Esegue l'assegnazione
-							{
-							//_msg.AppendLine($"{t.Item1}={t.Item2}");	// ...considera solo l'assegnazione
 							TypeVar typ = Assign(t.Item1, t.Item2);		// Esegue l'assegnazione
-							
 							}
 						}
+
 					linenum++;											// Incrementa il numero di linea
-					} // Fine foreach(...)
+
+					}
 				catch (Exception ex)
 					{
 					_msg.AppendLine($"Linea [{linenum}]. {ex.Message}");	// Messaggio di errore con numero di linea
+					continua = false;
 					ok = false;
 					}
-				}
+				} // Fine foreach(...)
 			}
 
 		/// <summary>
@@ -299,6 +314,32 @@ namespace CfgReader
 				c = line.Substring(i+1).Trim();
 				}
 			return new Tuple<string,string>(v,c);
+			}
+
+		/// <summary>
+		/// Identifica un comando e lo separa della stringa degli argomenti
+		/// </summary>
+		/// <param name="line"></param>
+		/// <returns></returns>
+		Tuple<string, string> IdentifyCommand(string line)
+			{
+			string c, a;
+			c = a = string.Empty;
+			int i;
+			if( (i = line.IndexOf(CHR_TypeArgSeparator)) != -1)		// Cerca la prima occorrenza del carattere di separazione (spazio)
+				{
+				c = line.Substring(0,i).Trim();
+				a = line.Substring(i+1).Trim();
+				}
+			else
+				{
+				c = line;											// Nel caso ci sia solo il omando senza argomenti
+				}
+			if(!_cmds.ContainsKey(c))								// Cerca il comando. Se non esiste, azzera
+				{
+				c = a = string.Empty;
+				}
+			return new Tuple<string,string>(c,a);
 			}
 
 		/// <summary>
@@ -349,7 +390,7 @@ namespace CfgReader
 			string line = txt.Replace('\t',' ').Trim();				// Sostituisce tab con spazio e toglie gli spazi iniziali e finali
 			if(txt.Length > 2)
 				{
-				int i = line.IndexOf(CHR_VarTypeSeparator);			// Prima occorrenza (tolti spazi iniziali)
+				int i = line.IndexOf(CHR_TypeArgSeparator);			// Prima occorrenza (tolti spazi iniziali)
 				if( (i > 0) && (i < line.Length-1))					// Diverso da -1 e all'interno
 					{
 					type = line.Substring(0,i).Trim();
@@ -384,11 +425,12 @@ namespace CfgReader
 			List<string> lst = ArgList(val);					// Ottiene i valori degli argomenti (lista)
 			Tuple<TypeVar, string> t = VarNameAndType(var);		// Ottiene tipo e nome della variabile	
 			
-			#if true											// Mostra l'assegnazione (poi eliminare)
-			string clst1,clst2;
-			clst1=clst2=String.Empty;
+			#if false											// Mostra l'assegnazione (poi eliminare)
+			string clst1,clst2,ddd;
+			clst1=clst2=ddd=String.Empty;
 			if(lst.Count > 1) {clst1 = "{";clst2 = "}";}
-			_msg.AppendLine($"{clst1}{t.Item1}{clst2} {t.Item2} = {val}");
+			if(val.Length == 0)	ddd=$"ELIMINA[{lst.Count}] ";
+			_msg.AppendLine($"{ddd}{clst1}{t.Item1}{clst2} {t.Item2} = {val}");
 			#endif
 
 			typ = ExecuteAssign(t.Item1, t.Item2, lst);			// Esegue l'assegnazione
@@ -462,6 +504,12 @@ namespace CfgReader
 				}
 			}	
 
+		/// <summary>
+		/// Crea una lista del tipo di dati specificato
+		/// </summary>
+		/// <param name="typ"></param>
+		/// <returns></returns>
+		/// <exception cref="NotImplementedException"></exception>
 		dynamic CreateList(TypeVar typ)
 			{
 			switch(typ)
@@ -497,6 +545,13 @@ namespace CfgReader
 				}
 			}
 
+		/// <summary>
+		/// Esegue l'assegnazione
+		/// </summary>
+		/// <param name="typ"></param>
+		/// <param name="name"></param>
+		/// <param name="args"></param>
+		/// <returns></returns>
 		TypeVar ExecuteAssign(TypeVar typ, string name, List<string> args)
 			{
 			TypeVar ret = TypeVar.None;							// Nessun tipo di default
@@ -511,6 +566,10 @@ namespace CfgReader
 						{
 						_dict[name] = x;
 						ret = typ;
+						}
+					else if(args[0].Length == 0)	// Se errore di conversione perché lunghezza nulla:...
+						{							// ...allora era richiesta la cancellazione.
+						_dict[name] = null;			// Rimuove
 						}
 					}
 				else
@@ -539,6 +598,12 @@ namespace CfgReader
 			return ret;
 			}
 
+		/// <summary>
+		/// Dynamic Object member access 
+		/// </summary>
+		/// <param name="binder"></param>
+		/// <param name="result"></param>
+		/// <returns></returns>
 		public override bool TryGetMember(GetMemberBinder binder, out dynamic result)
 			{
 			string key = binder.Name;
@@ -566,6 +631,9 @@ namespace CfgReader
 			_dict[binder.Name] = value;
 			return true;
 			}
+
+
+
 		}	// Fine classe CfgReader
 	
 	

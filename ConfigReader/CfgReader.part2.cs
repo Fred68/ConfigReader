@@ -78,7 +78,7 @@ namespace CfgReader
 		/// <summary>
 		/// Separatore tra tipo e nome variabile (spazio)
 		/// </summary>
-		public string CHR_VarTypeSeparator {get; } = @" ";
+		public string CHR_TypeArgSeparator {get; } = @" ";
 		/// <summary>
 		/// Allineamento numeri di linea
 		/// </summary>
@@ -94,10 +94,11 @@ namespace CfgReader
 		/// Off string
 		/// </summary>
 		public string STR_Off {get; set;} = @"OFF";
-		/// <summary>
-		/// Inizio linea per terminare la lettura
-		/// </summary>
-		public string STR_Errore {get; set;} = @"ERROR";
+
+		///// <summary>
+		///// Inizio linea per terminare la lettura
+		///// </summary>
+		//public string STR_Errore {get; set;} = @"ERROR";
 		#endregion
 
 		/// <summary>
@@ -108,5 +109,13 @@ namespace CfgReader
 		/// Strings for false
 		/// </summary>
 		public string[] strFalse	{get;} = {"false", "FALSE", "0"};
+
+		void CreateCommands()
+			{
+			_cmds["MSG"]	=new Func<string, bool>( arg => {_msg.AppendLine(arg); return true;});		// Genera un messaggio e continua
+			_cmds["STOP"]	=new Func<string, bool>( arg => {_msg.AppendLine(arg); return false;});		// Esce dal ciclo con un messaggio
+			_cmds["DUMP"]	=new Func<string, bool>( arg => {_msg.AppendLine(DumpEntries()); return true;});	// Variabili
+			_cmds["LINES"]	=new Func<string, bool>( arg => {_msg.AppendLine(DumpLines()); return true;});		// Linee lette
+			}
 		}
 	}

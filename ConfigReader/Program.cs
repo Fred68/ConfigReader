@@ -14,17 +14,19 @@ namespace CfgReader
 			Console.WriteLine("Avvio programma.");
 
 			dynamic cfgR = new CfgReader(filename);
-			cfgR.Process();
 
 			Console.WriteLine(cfgR.ToString());
 
 			
-			Console.WriteLine("cc = " + cfgR.cc);
-			cfgR.cc = 100.3f;
-			Console.WriteLine("cc = " + cfgR.cc);
+			//Console.WriteLine("cc = " + cfgR.cc);
+			//cfgR.cc = 100.3f;
+			//Console.WriteLine("cc = " + cfgR.cc);
 
-			Console.WriteLine("Variabili importate:");
-			Console.WriteLine(cfgR.DumpEntries());
+			//Console.WriteLine("Variabili importate:");
+			//Console.WriteLine(cfgR.DumpEntries());
+
+			//Console.WriteLine("Linee:");
+			//Console.WriteLine(cfgR.DumpLines());
 
 			Console.WriteLine("Fine programma.");
 			Console.ReadKey();
